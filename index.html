@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MT19937 (2002) — Türkiye Şans Oyunları • Mobil RNG</title>
+<style>
+  :root{
+    --bg: radial-gradient(1200px 800px at 30% -10%, #0ea5e9 0%, rgba(14,165,233,.25) 25%, transparent 40%),
+          radial-gradient(1000px 700px at 100% 110%, #22c55e 0%, rgba(34,197,94,.25) 25%, transparent 45%),
+          linear-gradient(180deg, #0b1020, #0a0f1a);
+    --card:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#38bdf8;
+    --sayisal:#ea0029;  /* Çılgın Sayısal Loto */
+    --super:#ff5100;    /* Süper Loto */
+    --sans:#e10098;     /* Şans Topu ana */
+    --bonus:#169ad6;    /* Bonus/top */
+    --onnum:#22c55e;    /* On Numara */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif; background:var(--bg); background-attachment:fixed}
+  .wrap{max-width:980px; margin:auto; padding:16px}
+  .card{background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)); border:1px solid rgba(148,163,184,.18); border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35); padding:16px}
+  h1{margin:6px 0 2px; font-size:clamp(20px,5vw,28px)}
+  .sub{color:var(--muted); font-size:clamp(12px,2.8vw,14px)}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .controls{margin-top:10px}
+  label{font-size:13px; color:var(--muted)}
+  select,input[type="number"]{ background:#0b1220; color:var(--text); border:1px solid rgba(148,163,184,.3); border-radius:12px; padding:10px 12px; font-size:15px }
+  .grow{flex:1}
+  button{ appearance:none; border:none; outline:none; cursor:pointer; padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px; color:#001018; background:linear-gradient(180deg,#0ea5e9,#0284c7); box-shadow:0 8px 18px rgba(14,165,233,.35), inset 0 0 0 1px rgba(255,255,255,.12); transition:transform .08s ease }
+  button:active{transform:translateY(1px)}
+  .btn-alt{background:linear-gradient(180deg,#22c55e,#16a34a); color:#00130a}
+  .btn-ghost{background:transparent; color:var(--text); border:1px solid rgba(148,163,184,.28); box-shadow:none}
+  .status{margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(148,163,184,.22); background:rgba(2,6,23,.55); font-size:15px}
+  .grid{ display:grid; grid-template-columns: 1fr; gap:12px; margin-top:14px }
+  @media(min-width:720px){ .grid{ grid-template-columns: 1fr 1fr } }
+  .panel{ background:rgba(2,6,23,.6); border:1px solid rgba(148,163,184,.15); border-radius:16px; padding:12px }
+
+  /* Balls */
+  .set{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px; border-radius:14px; background:rgba(2,6,23,.45); border:1px solid rgba(148,163,184,.18) }
+  .ball{ width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:.2px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35); box-shadow:inset 0 -6px 12px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.25) }
+  .ball.small{ width:34px; height:34px }
+  .sayisal { background:var(--sayisal) }
+  .super   { background:var(--super) }
+  .sans    { background:var(--sans) }
+  .bonus   { background:var(--bonus) }
+  .onnum   { background:var(--onnum) }
+  .label{ color:var(--muted); font-size:13px; margin-left:4px }
+
+  .hint{color:var(--muted); font-size:12.5px; margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🎰 MT19937 (2002) — Türkiye Şans Oyunları RNG</h1>
+      <div class="sub">Orijinal <strong>MT19937 (2002)</strong> algoritması ile — tek dosya, mobil uyumlu. <strong>Salla</strong> veya <strong>Üret</strong> ile kolon oluştur.</div>
+
+      <div class="controls row" role="group" aria-label="Kontroller">
+        <label>Oyun
+          <select id="game">
+            <option value="sayisal">Çılgın Sayısal Loto (6 / 90)</option>
+            <option value="super">Süper Loto (6 / 60)</option>
+            <option value="sans">Şans Topu (5 / 34 + 1 / 14)</option>
+            <option value="onnum">On Numara (10 / 80)</option>
+          </select>
+        </label>
+        <label>Kolon
+          <input type="number" id="kolon" min="1" max="30" value="1" />
+        </label>
+        <button id="gen" class="grow">Üret</button>
+        <button id="shake" class="btn-alt" aria-pressed="false">Salla: Kapalı</button>
+      </div>
+
+      <div id="status" class="status" role="status">Hazır. Oyun seç, kolon sayısını gir, <strong>Üret</strong> veya <strong>Salla</strong>.</div>
+
+      <div class="grid" id="results"></div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="copyCsv" class="btn-ghost">CSV Kopyala</button>
+        <button id="clear" class="btn-ghost">Temizle</button>
+      </div>
+
+      <div class="hint">Not: Her kolon <em>tekrarsız</em> ve artan sıralıdır. <strong>0–9</strong> arası sayılar <em>"0"</em> ile başlar (örn. 07). Bu araç yalnızca eğlence ve eğitim amaçlıdır.</div>
+    </div>
+  </div>
+
+<script>
+/*
+ * MT19937 (2002) — Orijinal sabitlerle JavaScript portu
+ * Makoto Matsumoto & Takuji Nishimura, 2002 — "MT19937ar" referansı
+ * Bu uygulama, C referansındaki bit düzeyindeki davranışları JS'de (32-bit) korur.
+ */
+class MT19937_2002 {
+  constructor(seed) {
+    this.N = 624; this.M = 397; this.MATRIX_A = 0x9908b0df>>>0; this.UPPER_MASK = 0x80000000>>>0; this.LOWER_MASK = 0x7fffffff>>>0;
+    this.mt = new Uint32Array(this.N); this.mti = this.N + 1;
+    if (Array.isArray(seed)) this.seedArray(seed.map(x=>x>>>0));
+    else this.seed(typeof seed === 'number' ? seed>>>0 : 5489>>>0);
+  }
+  seed(s){
+    this.mt[0] = s>>>0;
+    for (this.mti=1; this.mti<this.N; this.mti++){
+      const x = this.mt[this.mti-1] ^ (this.mt[this.mti-1]>>>30);
+      this.mt[this.mti] = (((((x & 0xffff0000)>>>16) * 1812433253) << 16) + ( (x & 0x0000ffff) * 1812433253) + this.mti)>>>0;
+    }
+  }
+  seedArray(init_key){
+    this.seed(19650218>>>0);
+    let i=1, j=0, k = Math.max(this.N, init_key.length);
+    for (; k>0; k--) {
+      const x = this.mt[i-1] ^ (this.mt[i-1]>>>30);
+      this.mt[i] = ( (this.mt[i] ^ (((((x & 0xffff0000)>>>16)*1664525)<<16) + ((x & 0x0000ffff)*1664525))) + (init_key[j]>>>0) + j )>>>0;
+      i++; j++; if (i>=this.N){ this.mt[0] = this.mt[this.N-1]; i=1; } if (j>=init_key.length) j=0;
+    }
+    for (k=this.N-1; k>0; k--) {
+      const x = this.mt[i-1] ^ (this.mt[i-1]>>>30);
+      this.mt[i] = ( (this.mt[i] ^ (((((x & 0xffff0000)>>>16)*1566083941)<<16) + ((x & 0x0000ffff)*1566083941))) - i )>>>0;
+      i++; if (i>=this.N){ this.mt[0] = this.mt[this.N-1]; i=1; }
+    }
+    this.mt[0] = 0x80000000>>>0; // MSB 1; yerel durumun tam başlatıldığını garanti eder
+  }
+  _twist(){
+    const N=this.N, M=this.M, U=this.UPPER_MASK, L=this.LOWER_MASK, A=this.MATRIX_A, mt=this.mt;
+    let y;
+    for (let kk=0; kk<N-M; kk++){
+      y = (mt[kk]&U) | (mt[kk+1]&L);
+      mt[kk] = (mt[kk+M] ^ (y>>>1) ^ ((y&1) ? A : 0))>>>0;
+    }
+    for (let kk=N-M; kk<N-1; kk++){
+      y = (mt[kk]&U) | (mt[kk+1]&L);
+      mt[kk] = (mt[kk+(M-N)] ^ (y>>>1) ^ ((y&1) ? A : 0))>>>0;
+    }
+    y = (mt[N-1]&U) | (mt[0]&L);
+    mt[N-1] = (mt[M-1] ^ (y>>>1) ^ ((y&1)? A : 0))>>>0;
+    this.mti = 0;
+  }
+  int32(){
+    if (this.mti >= this.N) this._twist();
+    let y = this.mt[this.mti++];
+    y ^= y >>> 11;
+    y ^= (y << 7)  & 0x9d2c5680;
+    y ^= (y << 15) & 0xefc60000;
+    y ^= y >>> 18;
+    return y>>>0;
+  }
+  real(){ // [0,1)
+    return this.int32() * (1.0/4294967296.0);
+  }
+  intInRange(min, max){ // inclusive
+    const r = this.real();
+    return min + Math.floor(r * (max - min + 1));
+  }
+}
+
+// --- UI / Logic ---
+const el = sel => document.querySelector(sel);
+const results = el('#results');
+const status  = el('#status');
+const gameSel = el('#game');
+const kolonIn = el('#kolon');
+const genBtn  = el('#gen');
+const shakeBtn= el('#shake');
+const copyCsv = el('#copyCsv');
+const clearBtn= el('#clear');
+
+let mt = new MT19937_2002(autoSeed());
+
+function autoSeed(){
+  if (window.crypto && crypto.getRandomValues){
+    const a = new Uint32Array(4); crypto.getRandomValues(a);
+    return (a[0]^a[1]^a[2]^a[3])>>>0;
+  }
+  return (Date.now() ^ (Math.random()*0x7fffffff)|0)>>>0; // yedek
+}
+
+function pad2(n){ return n<10 ? ('0'+n) : String(n) }
+
+function sampleUnique(count, min, max){
+  const n = max-min+1; if (count>n) throw new Error('count > range');
+  const arr = Array.from({length:n}, (_,i)=>i+min);
+  for (let i=n-1;i>0;i--){ const j = mt.intInRange(0,i); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  return arr.slice(0,count).sort((a,b)=>a-b);
+}
+
+function drawSet(game){
+  if (game==='sayisal'){ return {main: sampleUnique(6,1,90), meta:{cls:'sayisal', title:'Çılgın Sayısal Loto 6/90'} } }
+  if (game==='super'){   return {main: sampleUnique(6,1,60), meta:{cls:'super',   title:'Süper Loto 6/60'} } }
+  if (game==='sans'){    return {main: sampleUnique(5,1,34), bonus: sampleUnique(1,1,14), meta:{cls:'sans', title:'Şans Topu 5/34 + 1/14'} } }
+  if (game==='onnum'){   return {main: sampleUnique(10,1,80), meta:{cls:'onnum',  title:'On Numara 10/80'} } }
+  return {main: sampleUnique(6,1,60), meta:{cls:'super', title:'Varsayılan'} };
+}
+
+function renderSet(container, set, idx){
+  const wrap = document.createElement('div');
+  wrap.className = 'panel';
+  const title = document.createElement('div');
+  title.className = 'label';
+  title.textContent = `#${idx+1} • ${set.meta.title}`;
+
+  const row = document.createElement('div'); row.className = 'set';
+  set.main.forEach(n=>{ const b=document.createElement('div'); b.className = `ball ${set.meta.cls}`; b.textContent = pad2(n); row.appendChild(b) });
+  // Şans Topu: bonus yazısı olmadan, aynı satırda ekle
+  if (set.bonus){ set.bonus.forEach(n=>{ const b=document.createElement('div'); b.className='ball bonus small'; b.textContent=pad2(n); row.appendChild(b) }) }
+
+  wrap.appendChild(title); wrap.appendChild(row); container.appendChild(wrap);
+}
+
+function generate(){
+  const game = gameSel.value; const k = Math.max(1, Math.min(30, parseInt(kolonIn.value||'1',10)));
+  results.innerHTML='';
+  for (let i=0;i<k;i++){ const s = drawSet(game); renderSet(results, s, i); }
+  status.textContent = 'Kolonlar üretildi.';
+  vibe([20,40,20]);
+}
+
+function vibe(p=[18]){ if (navigator.vibrate) navigator.vibrate(p) }
+
+// Buttons
+genBtn.addEventListener('click', generate);
+clearBtn.addEventListener('click', ()=>{ results.innerHTML=''; status.textContent='Ekran temizlendi.' });
+copyCsv.addEventListener('click', ()=>{
+  const nodes = results.querySelectorAll('.panel .set'); if (!nodes.length){ status.textContent='Önce üret.'; return; }
+  let lines=[]; nodes.forEach(s=>{
+    const balls=[...s.querySelectorAll('.ball')].map(b=>b.textContent);
+    lines.push(balls.join(','));
+  });
+  const text = lines.join('\n'); /* <-- DÜZELTME: '\n' */
+  navigator.clipboard?.writeText(text).then(()=>status.textContent='CSV panoya kopyalandı.').catch(()=>status.textContent='Kopyalama izni verilmedi.');
+});
+
+// Shake support
+let motionOn=false; let lastAccel={x:0,y:0,z:0}; let lastTime=0;
+function motionHandler(e){ const acc=e.accelerationIncludingGravity; if(!acc) return; const j=Math.abs(acc.x-lastAccel.x)+Math.abs(acc.y-lastAccel.y)+Math.abs(acc.z-lastAccel.z); lastAccel={x:acc.x||0,y:acc.y||0,z:acc.z||0}; if (j>30){ generate(); } }
+async function toggleShake(){
+  if (motionOn){ window.removeEventListener('devicemotion', motionHandler); motionOn=false; shakeBtn.textContent='Salla: Kapalı'; shakeBtn.setAttribute('aria-pressed','false'); return; }
+  try{
+    if (typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function'){
+      const p = await DeviceMotionEvent.requestPermission(); if (p!=='granted'){ status.textContent='Sensör izni verilmedi.'; return; }
+    }
+    window.addEventListener('devicemotion', motionHandler, {passive:true});
+    motionOn=true; shakeBtn.textContent='Salla: Açık'; shakeBtn.setAttribute('aria-pressed','true'); status.textContent='Salla → üret etkin.';
+  }catch(err){ console.warn(err); status.textContent='Bu cihazda hareket sensörü desteklenmiyor.'; }
+}
+shakeBtn.addEventListener('click', toggleShake);
+
+// Klavye: Enter/Space üretir
+addEventListener('keydown', (e)=>{ if (e.code==='Space'||e.code==='Enter'){ e.preventDefault(); generate(); } }, {passive:false});
+
+// Başlangıç
+status.textContent='MT19937 (2002) başlatıldı. Seed: cihaz entropisi.';
+</script>
+</body>
+</html>
