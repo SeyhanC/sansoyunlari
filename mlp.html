@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Offline Loto Emülatör — 6/90 • 6/60 • 5/34+1/14</title>
+<style>
+  :root{--ink:#0f172a;--muted:#6b7280;--line:#e5e7eb;--bg:#ffffff;--ghost:#f8fafc;--sayisal:#ea0029;--super:#ff5100;--sans:#e10098;--bonus:#169ad6;--main:#ea0029}
+  *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;color:var(--ink);background:linear-gradient(180deg,#f5f7fb,#ffffff);overflow-x:hidden}
+  img,svg,canvas{max-width:100%;height:auto;display:block}
+  .wrap{max-width:980px;width:min(980px,100%);margin:auto;padding:clamp(12px,3vw,16px)}
+  header{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+  h1{font-size:clamp(18px,3.8vw,22px);margin:0}.badge{font-size:12px;background:#eef2ff;color:#3730a3;padding:4px 8px;border-radius:999px;border:1px solid #c7d2fe;display:inline-block}
+  .gtabs{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
+  .gtabs button{appearance:none;border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:700;color:#334155}
+  .gtabs button.active{border-color:var(--main);box-shadow:0 0 0 2px rgba(0,0,0,.02) inset;color:#0f172a}
+  .tabs{display:flex;gap:8px;margin:6px 0 12px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .tab{appearance:none;border:0;background:transparent;padding:12px 16px;font-weight:700;color:#64748b;border-bottom:3px solid transparent;cursor:pointer}
+  .tab.active{color:#111827;border-color:var(--main)}
+  .slip{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:8px 8px 4px;margin-bottom:12px;box-shadow:0 6px 20px rgba(0,0,0,.05)}
+  .row{display:grid;grid-template-columns:28px repeat(6,minmax(0,1fr)) 86px;gap:6px;align-items:center;padding:6px}
+  .row.sans{grid-template-columns:28px repeat(6,minmax(0,1fr)) 86px}
+  .row+.row{border-top:1px dashed var(--line)}.idx{font-weight:700;color:#6b7280;text-align:center}
+  .ball{--d:clamp(26px,5.2vw,34px);height:var(--d);width:var(--d);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;background:#fff;border:2px dashed var(--line);color:#cbd5e1;font-size:clamp(11px,3.2vw,14px)}
+  .ball.filled{border:none;color:#fff}.ball.sayisal{background:var(--sayisal)}.ball.super{background:var(--super)}.ball.sans{background:var(--sans)}.ball.bonus{background:var(--bonus);color:#fff}
+  .controls{display:flex;gap:6px;justify-self:end}
+  .iconbtn{height:clamp(30px,5.6vw,34px);width:clamp(34px,6vw,40px);padding:0;border-radius:10px;border:1px solid var(--line);background:#fff;color:#111827;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .iconbtn:hover{background:#f3f4f6}.iconbtn svg{width:18px;height:18px}
+  .panel{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:12px}
+  @media (max-width:900px){.panel{grid-template-columns:1fr}}
+  .grid{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .grid h3{margin:0 0 8px 0;font-size:16px}.legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0;color:#6b7280;font-size:12px}
+  .cells{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:clamp(4px,1.2vw,6px)}
+  .cells.small{grid-template-columns:repeat(10,minmax(0,1fr))}
+  .cell{border:1px solid #d1d5db;border-radius:8px;padding:clamp(4px,1.4vw,7px);text-align:center;cursor:pointer;background:#fff;font-weight:700;user-select:none;font-size:clamp(11px,2.2vw,14px);aspect-ratio:1/1}
+  .cell.sel{background:var(--main);color:#fff;border-color:var(--main)}
+  .tools{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .tools h3{margin:0 0 6px 0;font-size:16px}.btn{width:100%;padding:clamp(10px,2.6vw,12px) 12px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;font-size:clamp(12px,2.8vw,14px)}
+  .btn:hover{background:#f3f4f6}.pill{display:inline-flex;align-items:center;gap:8px;background:#e5e7eb;border-radius:999px;padding:6px 10px;font-size:12px}
+  .foot{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:12px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  @media (max-width:560px){.row{grid-template-columns:24px repeat(6,1fr) 70px}.row.sans{grid-template-columns:24px repeat(6,1fr) 70px}.iconbtn{width:34px}.cells{grid-template-columns:repeat(7,1fr)}}
+  @media (max-width:420px){.cells{grid-template-columns:repeat(10,1fr)}.cells.small{grid-template-columns:repeat(10,1fr)}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="display:flex;align-items:center;gap:10px">
+        <h1>Offline Loto Emülatör <br><span class="badge">Çılgın 6/90 • Süper 6/60 • Şans 5/34+1/14</span></h1>
+      </div>
+    </header>
+
+    <div class="gtabs">
+      <button class="gtab active" data-game="sayisal">Çılgın Sayısal (6/90)</button>
+      <button class="gtab" data-game="super">Süper Loto (6/60)</button>
+      <button class="gtab" data-game="sans">Şans Topu (5/34 + 1/14)</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-choose">Sen Seç</button>
+      <button class="tab" id="tab-system" title="Yakında">Sistem Oyunu</button>
+    </div>
+
+    <section class="slip" id="slip"></section>
+
+    <div class="panel">
+      <div class="grid">
+        <h3 id="gridTitle">Çılgın Sayısal Loto</h3>
+        <div class="legend" id="legend"></div>
+        <div class="cells" id="cells"></div>
+        <div id="bonusBlock" style="display:none; margin-top:12px">
+          <div style="font-weight:700; margin:6px 0 8px">Joker / +1 (1–14)</div>
+          <div class="cells small" id="bonusCells"></div>
+        </div>
+      </div>
+      <aside class="tools">
+        <h3>İşlemler</h3>
+        <button class="btn" id="btnRandom">Rastgele Doldur (Sıradaki Boş Satır)</button>
+        <div class="foot"><div>Toplam <b id="kolonSay">0</b> Kolon</div></div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+(()=>{const g={sayisal:{id:"sayisal",name:"Çılgın Sayısal Loto",mainCount:6,mainMax:90,colorVar:"--sayisal",hasBonus:!1},super:{id:"super",name:"Süper Loto",mainCount:6,mainMax:60,colorVar:"--super",hasBonus:!1},sans:{id:"sans",name:"Şans Topu",mainCount:5,mainMax:34,colorVar:"--sans",hasBonus:!0,bonusMax:14}};let c=g.sayisal;function M(t){null==t&&(t=(new Date).getTime());this.N=624;this.M=397;this.MATRIX_A=2567483615;this.UPPER_MASK=2147483648;this.LOWER_MASK=2147483647;this.mt=new Array(this.N);this.mti=this.N+1;this.init_genrand(t)}M.prototype.init_genrand=function(t){this.mt[0]=t>>>0;this.mti=1;for(;this.mti<this.N;this.mti++){var e=this.mt[this.mti-1]^this.mt[this.mti-1]>>>30;this.mt[this.mti]=((1812433253*((4294901760&e)>>>16))<<16)+1812433253*(65535&e)+this.mti;this.mt[this.mti]>>>=0}};M.prototype.genrand_int32=function(){var t,e=[0,this.MATRIX_A];if(this.mti>=this.N){var n=0;for(;n<this.N-this.M;n++){t=(this.mt[n]&this.UPPER_MASK)|(this.mt[n+1]&this.LOWER_MASK);this.mt[n]=this.mt[n+this.M]^(t>>>1)^e[t&1]}for(;n<this.N-1;n++){t=(this.mt[n]&this.UPPER_MASK)|(this.mt[n+1]&this.LOWER_MASK);this.mt[n]=this.mt[n+(this.M-this.N)]^(t>>>1)^e[t&1]}t=(this.mt[this.N-1]&this.UPPER_MASK)|(this.mt[0]&this.LOWER_MASK);this.mt[this.N-1]=this.mt[this.M-1]^(t>>>1)^e[t&1];this.mti=0}t=this.mt[this.mti++];t^=t>>>11;t^=(t<<7)&2636928640;t^=(t<<15)&4022730752;t^=t>>>18;return t>>>0};M.prototype.random=function(){return this.genrand_int32()*(1/4294967296)};function R(t,e){const n=new M((new Date).getTime()*(30*Math.random())),a=new Set;for(;a.size<e;){let r=1+Math.max(0,Math.min(t-1,Math.round(n.random()*(t-1)+.49)));a.add(r)}return Array.from(a)}function U(t){return R(t,1)[0]}const $=document.getElementById.bind(document),S=$("kolonSay"),z=$("slip"),y=$("cells"),w=$("bonusBlock"),x=$("bonusCells"),h=$("gridTitle"),v=$("legend"),o={sayisal:Array.from({length:7},()=>({nums:[]})),super:Array.from({length:7},()=>({nums:[]})),sans:Array.from({length:7},()=>({nums:[],bonus:null}))};let l=0;const i=t=>String(t).padStart(2,"0"),A=t=>{const e=document.createElement("div");e.textContent=t,Object.assign(e.style,{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",background:"#111827",color:"#fff",padding:"10px 14px",borderRadius:"10px",boxShadow:"0 10px 30px rgba(0,0,0,.25)",zIndex:50}),document.body.appendChild(e),setTimeout(()=>e.remove(),1500)},B=t=>{const e=getComputedStyle(document.documentElement).getPropertyValue(t.colorVar).trim();document.documentElement.style.setProperty("--main",e)},C=()=>{const t=o[c.id],e=t.filter(s=>s.nums.length===c.mainCount&&(!c.hasBonus||s.bonus)).length;S.textContent=e},E=()=>{const t=o[c.id];for(let e=0;e<t.length;e++){if(t[e].nums.length<c.mainCount||c.hasBonus&&!t[e].bonus)return e}return-1},H=t=>{t==="sans"?o.sans=Array.from({length:7},()=>({nums:[],bonus:null})):t==="sayisal"?o.sayisal=Array.from({length:7},()=>({nums:[]})):t==="super"&&(o.super=Array.from({length:7},()=>({nums:[]})))},L=()=>{document.querySelectorAll(".gtab").forEach(t=>{t.addEventListener("click",()=>{if(t.classList.contains("active"))return;document.querySelectorAll(".gtab").forEach(e=>e.classList.remove("active")),t.classList.add("active"),N(t.dataset.game)})})},N=t=>{H(c.id),c=g[t],B(c),h.textContent=c.name,P(),T(),l=Math.max(0,E()),D(),C()},P=()=>{const t=o[c.id];z.innerHTML="",t.forEach((e,n)=>{const a=document.createElement("div");a.className="row"+(c.id==="sans"?" sans":""),a.dataset.i=n;const r=document.createElement("div");r.className="idx",r.textContent=n+1,a.appendChild(r);const s=c.mainCount;for(let d=0;d<s;d++){const f=e.nums[d],p=document.createElement("div");p.className="ball"+(f!==void 0?" filled "+(c.id==="sayisal"?"sayisal":c.id==="super"?"super":"sans"):""),p.textContent=f!==void 0?i(f):"",a.appendChild(p)}if(c.hasBonus){const d=document.createElement("div");d.className="ball"+(e.bonus?" filled bonus":""),d.textContent=e.bonus?i(e.bonus):"",a.appendChild(d)}const m=document.createElement("div");m.className="controls";const k=j("Düzenle","edit",()=>{l=n,D(),F()}),b=j("Sil","trash",()=>{t[n]=c.hasBonus?{nums:[],bonus:null}:{nums:[]},P(),C(),l=Math.max(0,E()),D(),G()});m.append(k,b),a.appendChild(m),z.appendChild(a)}),D()},j=(t,e,n)=>{const a=document.createElement("button");a.className="iconbtn",a.setAttribute("aria-label",t),a.title=t;const r="http://www.w3.org/2000/svg",s=document.createElementNS(r,"svg");if(s.setAttribute("viewBox","0 0 24 24"),s.setAttribute("fill","none"),s.setAttribute("stroke","currentColor"),s.setAttribute("stroke-width","2"),s.setAttribute("stroke-linecap","round"),s.setAttribute("stroke-linejoin","round"),e==="edit")[["path","d","M12 20h9"],["path","d","M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"]].forEach(([d,f,p])=>{const m=document.createElementNS(r,d);m.setAttribute(f,p),s.appendChild(m)});else[["polyline","points","3 6 5 6 21 6"],["path","d","M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"],["path","d","M10 11v6"],["path","d","M14 11v6"],["path","d","M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"]].forEach(([d,f,p])=>{const m=document.createElementNS(r,d);m.setAttribute(f,p),s.appendChild(m)});return a.appendChild(s),a.onclick=n,a},D=()=>{[...z.children].forEach((t,e)=>{t.style.background=e===l?"#f8fafc":"transparent"})},T=()=>{v.innerHTML="";[`${c.mainCount} sayı seç (1–${c.mainMax})`,c.hasBonus?"•":"",c.hasBonus?`Ayrıca 1 bonus (1–${c.bonusMax})`:""].filter(Boolean).forEach(t=>{const e=document.createElement("span");e.innerHTML=t,v.appendChild(e)}),y.innerHTML="";for(let t=1;t<=c.mainMax;t++){const e=document.createElement("div");e.className="cell",e.textContent=t,e.dataset.n=t,e.addEventListener("click",()=>q(+e.dataset.n)),y.appendChild(e)}if(c.hasBonus){w.style.display="",x.innerHTML="";for(let t=1;t<=c.bonusMax;t++){const e=document.createElement("div");e.className="cell",e.textContent=t,e.dataset.n=t,e.addEventListener("click",()=>O(+e.dataset.n)),x.appendChild(e)}}else w.style.display="none",x.innerHTML="";F()},q=t=>{const e=o[c.id][l];e.nums.includes(t)?e.nums=e.nums.filter(n=>n!==t):(e.nums.length>=c.mainCount||(e.nums.push(t),e.nums.sort((n,a)=>n-a))),G(),P(),C(),e.nums.length===c.mainCount&&(!c.hasBonus||e.bonus)&&K()},O=t=>{if(!c.hasBonus)return;const e=o[c.id][l];e.bonus=t,G(),P(),C(),e.nums.length===c.mainCount&&K()},I=$("btnRandom");I.onclick=()=>{const t=E();if(t===-1){A("Tüm satırlar dolu. Yeni seçim için bir satırı temizleyin.");return}l=t,D();const e=o[c.id][l];e.nums=R(c.mainMax,c.mainCount).sort((n,a)=>n-a),c.hasBonus&&(e.bonus=U(c.bonusMax)),P(),G(),C(),Y()},G=()=>{const t=o[c.id][l];[...y.children].forEach(e=>{const n=+e.dataset.n;e.classList.toggle("sel",t.nums.includes(n))}),c.hasBonus&&[...x.children].forEach(e=>{const n=+e.dataset.n;e.classList.toggle("sel",o[c.id][l].bonus===n)})},F=()=>{G()},J=()=>{[...y.children].forEach(t=>t.classList.remove("sel")),c.hasBonus&&[...x.children].forEach(t=>t.classList.remove("sel"))},Y=()=>{setTimeout(()=>{J(),Q()},50)},K=()=>{setTimeout(()=>{J(),Q()},50)},Q=()=>{C();const t=E();t===-1?(l=o[c.id].length-1,D()):(l=t,D())};(()=>{B(c),P(),T(),l=Math.max(0,E()),D(),C(),L()})()})();
+</script>
+</body>
+</html>
